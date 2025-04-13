@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast 24×7</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Geolocation/1.0.0/geolocation.min.js"></script>
+</head>
+<body>
+
+  <header id="header">
+    <div class="header-content">
+      <div class="clouds">
+        <img src="clouds.png" alt="Waving Clouds" class="clouds-img">
+      </div>
+      <h1>Weather Forecast 24×7</h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="search-container">
+      <input type="text" id="city-input" placeholder="Enter city name..." onkeyup="searchCity()" />
+      <ul id="city-suggestions"></ul>
+      <button onclick="getWeather()">Get Weather</button>
+    </div>
+
+    <div id="weather-info">
+      <h2 id="city-name"></h2>
+      <p id="current-weather"></p>
+      <p id="date-time"></p>
+      <div id="city-time"></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>Powered by Sathmin OFC©</p>
+  </footer>
+
+  <script>
+    const apiKey = "5df2f5d11845c8ef5c7640dbc30eb1a5"; // Use your own API key
+
+    // Change header background based on AM/PM
+    const updateHeaderBackground = () => {
+      const currentTime = new Date();
+      const hours = currentTime.getHours();
+
+      if (hours >= 6 && hours < 18) {
+        document.body.style.background = "#FFF6E0"; // Light background (Day)
+        document.getElementById("header").style.background = "linear-gradient(to right, #80e0ff, #ffd700)"; // Sun background
+      } else {
+        document.body.style.background = "#1c1c1c"; // Dark background (Night)
+        document.getElementById("header").style.background = "linear-gradient(to right, #2b2b2b, #000000)"; // Moon and stars
+      }
+    };
+
+    updateHeaderBackground();
+
+    // Get weather of the current location
+    const getWeather = () => {
+      const cityName = document.getElementById("city-input").value;
+
+      if (!cityName) {
+        alert("Please enter a city name.");
+        return;
+      }
+
+      axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}&units=metric`)
+        .then(response => {
+          const data = response.data;
+          const city = data.name;
+          const weather = data.weather[0].description;
+          const temp = data.main.temp;
+          const dateTime = new Date().toLocaleString();
+
+          document.getElementById("city-name").innerText = city;
+          document.getElementById("current-weather").innerText = `${weather} - ${temp}°C`;
+          document.getElementById("date-time").innerText = `Local Time: ${dateTime}`;
+          document.getElementById("city-time").innerText = `Weather data for ${city} updated at: ${dateTime}`;
+        })
+        .catch(error => {
+          console.error(error);
+          alert("City not found. Please try again.");
+        });
+    };
+
+    // Fetch weather for the user's current location
+    const getCurrentLocationWeather = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+
+          axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`)
+            .then(response => {
+              const data = response.data;
+              const city = data.name;
+              const weather = data.weather[0].description;
+              const temp = data.main.temp;
+
+              document.getElementById("city-name").innerText = city;
+              document.getElementById("current-weather").innerText = `${weather} - ${temp}°C`;
+            })
+            .catch(error => console.log(error));
+        });
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    };
+
+    // Search city function for suggestions
+    const searchCity = () => {
+      const query = document.getElementById("city-input").value;
+      const citySuggestions = document.getElementById("city-suggestions");
+
+      if (query.length > 2) {
+        axios.get(`https://api.openweathermap.org/data/2.5/find?q=${query}&appid=${apiKey}`)
+          .then(response => {
+            citySuggestions.innerHTML = "";
+            const cities = response.data.list;
+
+            cities.forEach(city => {
+              const li = document.createElement("li");
+              li.textContent = city.name;
+              li.onclick = () => {
+                document.getElementById("city-input").value = city.name;
+                getWeather();
+                citySuggestions.innerHTML = "";
+              };
+              citySuggestions.appendChild(li);
+            });
+          });
+      } else {
+        citySuggestions.innerHTML = "";
+      }
+    };
+
+    // Call to get weather based on current location when the page loads
+    window.onload = getCurrentLocationWeather;
+
+  </script>
+</body>
+</html>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    transition: background 1s ease;
+  }
+
+  header {
+    background: #80e0ff;
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .header-content {
+    position: relative;
+    display: inline-block;
+  }
+
+  .clouds-img {
+    position: absolute;
+    animation: wave 5s infinite linear;
+  }
+
+  @keyframes wave {
+    0% { left: -300px; }
+    50% { left: 100vw; }
+    100% { left: -300px; }
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    color: #333;
+  }
+
+  main {
+    padding: 20px;
+    text-align: center;
+  }
+
+  .search-container {
+    margin: 20px;
+  }
+
+  #city-input {
+    padding: 10px;
+    font-size: 1rem;
+    width: 300px;
+  }
+
+  #city-suggestions {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  #city-suggestions li {
+    padding: 5px;
+    cursor: pointer;
+    background-color: #f1f1f1;
+  }
+
+  #city-suggestions li:hover {
+    background-color: #e0e0e0;
+  }
+
+  #weather-info {
+    margin-top: 20px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 10px;
+    background-color: #333;
+    color: white;
+    position: fixed;
+    width: 100%;
+    bottom: 0;
+  }
+</style>
